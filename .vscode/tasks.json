@@ -36,6 +36,24 @@
                 "${workspaceFolder}/WindowLogger.sln"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Single File Build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/WindowLogger.sln",
+                "-c",
+                "Release",
+                "-r",
+                "win-x64",
+                "/p:PublishSingleFile=true",
+                "/p:IncludeAllContentForSelfExtract=true",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary;ForceNoAlign"
+            ],
+            "problemMatcher": "$msCompile"
         }
     ]
 }

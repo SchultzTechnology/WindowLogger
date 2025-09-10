@@ -3,10 +3,11 @@ using System.Text;
 
 public class WindowsAutomation
 {
-    // Struct to store window title and handle
+    // Struct to store window information
     public class WindowInfo
     {
         public string? Title { get; set; }
+        public string? ClassName { get; set; }
         public IntPtr Handle { get; set; }
     }
 
@@ -25,6 +26,10 @@ public class WindowsAutomation
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hWnd);
 
+    // Import GetClassName from user32.dll
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
     // Gets a list of all open windows
     public static List<WindowInfo> GetOpenWindows()
     {
@@ -35,13 +40,17 @@ public class WindowsAutomation
             if (IsWindowVisible(hwnd))
             {
                 var title = new StringBuilder(256);
+                var className = new StringBuilder(256);
+                
                 GetWindowText(hwnd, title, title.Capacity);
+                GetClassName(hwnd, className, className.Capacity);
 
                 if (!string.IsNullOrWhiteSpace(title.ToString()))
                 {
                     windows.Add(new WindowInfo
                     {
                         Title = title.ToString(),
+                        ClassName = className.ToString(),
                         Handle = hwnd
                     });
                 }

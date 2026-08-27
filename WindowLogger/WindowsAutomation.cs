@@ -41,6 +41,24 @@ public class WindowsAutomation
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, StringBuilder lParam);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    private const uint WM_GETTEXT = 0x000D;
+    private const uint WM_GETTEXTLENGTH = 0x000E;
+
+    private static string GetControlText(IntPtr hwnd)
+    {
+        int len = (int)SendMessage(hwnd, WM_GETTEXTLENGTH, IntPtr.Zero, IntPtr.Zero);
+        if (len <= 0) return string.Empty;
+        var sb = new StringBuilder(len + 1);
+        SendMessage(hwnd, WM_GETTEXT, (IntPtr)sb.Capacity, sb);
+        return sb.ToString();
+    }
+
     // Gets a list of all open windows
     public static List<WindowInfo> GetOpenWindows()
     {
@@ -92,13 +110,12 @@ public class WindowsAutomation
             GetClassName(hwnd, className, className.Capacity);
             var cls = className.ToString();
 
-            var text = new StringBuilder(1024);
-            GetWindowText(hwnd, text, text.Capacity);
+            var text = GetControlText(hwnd);
 
             controls.Add(new ChildControlInfo
             {
                 ClassName = cls,
-                Text = text.ToString(),
+                Text = text,
                 Handle = hwnd,
                 IsVisible = IsWindowVisible(hwnd),
                 IsEnabled = IsWindowEnabled(hwnd),

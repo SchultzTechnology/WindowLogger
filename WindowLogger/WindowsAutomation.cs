@@ -11,22 +11,33 @@ public class WindowsAutomation
         public IntPtr Handle { get; set; }
     }
 
-    // Delegate for EnumWindows
+    public class ChildControlInfo
+    {
+        public string? ClassName { get; set; }
+        public string? Text { get; set; }
+        public IntPtr Handle { get; set; }
+        public bool IsVisible { get; set; }
+        public bool IsEnabled { get; set; }
+        public bool IsInput { get; set; }
+    }
+
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
-    // Import EnumWindows from user32.dll
     [DllImport("user32.dll")]
     private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
-    // Import GetWindowText from user32.dll
+    [DllImport("user32.dll")]
+    private static extern bool EnumChildWindows(IntPtr hWndParent, EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
-    // Import IsWindowVisible from user32.dll
     [DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr hWnd);
 
-    // Import GetClassName from user32.dll
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowEnabled(IntPtr hWnd);
+
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
@@ -59,5 +70,44 @@ public class WindowsAutomation
         }, IntPtr.Zero);
 
         return windows;
+    }
+
+    private static readonly HashSet<string> InputClassNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Edit", "RichEdit", "RichEdit20A", "RichEdit20W", "RICHEDIT50W",
+        "ComboBox", "ComboBoxEx32",
+        "msctls_trackbar32",
+        "SysDateTimePick32",
+        "SysListView32",
+        "SysTreeView32",
+    };
+
+    public static List<ChildControlInfo> GetChildControls(IntPtr windowHandle)
+    {
+        var controls = new List<ChildControlInfo>();
+
+        EnumChildWindows(windowHandle, (hwnd, lParam) =>
+        {
+            var className = new StringBuilder(256);
+            GetClassName(hwnd, className, className.Capacity);
+            var cls = className.ToString();
+
+            var text = new StringBuilder(1024);
+            GetWindowText(hwnd, text, text.Capacity);
+
+            controls.Add(new ChildControlInfo
+            {
+                ClassName = cls,
+                Text = text.ToString(),
+                Handle = hwnd,
+                IsVisible = IsWindowVisible(hwnd),
+                IsEnabled = IsWindowEnabled(hwnd),
+                IsInput = InputClassNames.Contains(cls),
+            });
+
+            return true;
+        }, IntPtr.Zero);
+
+        return controls;
     }
 }

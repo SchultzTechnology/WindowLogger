@@ -1,0 +1,53 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish
+        run: >
+          dotnet publish WindowLogger/WindowLogger.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -o publish
+
+      - name: Decode signing certificate
+        run: |
+          $bytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERT_PFX }}")
+          [IO.File]::WriteAllBytes("${{ runner.temp }}\cert.pfx", $bytes)
+
+      - name: Sign executable
+        run: >
+          & "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          sign /f "${{ runner.temp }}\cert.pfx"
+          /p "${{ secrets.SIGNING_CERT_PASSWORD }}"
+          /tr http://timestamp.digicert.com
+          /td sha256
+          /fd sha256
+          publish\WindowLogger.exe
+
+      - name: Remove certificate
+        if: always()
+        run: Remove-Item "${{ runner.temp }}\cert.pfx" -Force -ErrorAction SilentlyContinue
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/WindowLogger.exe
+          generate_release_notes: true

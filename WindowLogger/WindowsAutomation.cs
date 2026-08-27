@@ -19,6 +19,11 @@ public class WindowsAutomation
         public bool IsVisible { get; set; }
         public bool IsEnabled { get; set; }
         public bool IsInput { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int ControlId { get; set; }
     }
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
@@ -40,6 +45,15 @@ public class WindowsAutomation
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    private static extern int GetDlgCtrlID(IntPtr hWnd);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT { public int Left, Top, Right, Bottom; }
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, StringBuilder lParam);
@@ -117,6 +131,8 @@ public class WindowsAutomation
 
             var text = GetControlText(hwnd);
 
+            GetWindowRect(hwnd, out RECT rect);
+
             controls.Add(new ChildControlInfo
             {
                 ClassName = cls,
@@ -125,6 +141,11 @@ public class WindowsAutomation
                 IsVisible = IsWindowVisible(hwnd),
                 IsEnabled = IsWindowEnabled(hwnd),
                 IsInput = InputClassNames.Contains(cls),
+                X = rect.Left,
+                Y = rect.Top,
+                Width = rect.Right - rect.Left,
+                Height = rect.Bottom - rect.Top,
+                ControlId = GetDlgCtrlID(hwnd),
             });
 
             return true;

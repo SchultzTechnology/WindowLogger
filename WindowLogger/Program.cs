@@ -21,12 +21,14 @@
                 {
                     Console.WriteLine($"Title: {window.Title}, Class: {window.ClassName}, Handle: {window.Handle}");
                     var controls = WindowsAutomation.GetChildControls(window.Handle);
+                    int inputIndex = 0;
                     foreach (var ctrl in controls)
                     {
                         var tag = ctrl.IsInput ? "[Input]" : "[Control]";
                         var text = string.IsNullOrEmpty(ctrl.Text) ? "" : $" \"{ctrl.Text}\"";
                         var name = !string.IsNullOrEmpty(ctrl.AutomationName) ? $" [{ctrl.AutomationName}]" : "";
-                        Console.WriteLine($"  |_ {tag} {ctrl.ClassName}{text}{name}");
+                        var idx = ctrl.IsInput ? $" #{inputIndex++}" : "";
+                        Console.WriteLine($"  |_ {tag} {ctrl.ClassName}{text}{name}{idx}");
                     }
                 }
 

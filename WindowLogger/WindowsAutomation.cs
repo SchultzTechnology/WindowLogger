@@ -98,6 +98,11 @@ public class WindowsAutomation
         "SysDateTimePick32",
         "SysListView32",
         "SysTreeView32",
+        // Delphi (VCL) input controls
+        "TEdit", "TMemo", "TRichEdit", "TMaskEdit",
+        "TComboBox", "TListBox", "TCheckListBox",
+        "TDateTimePicker", "TSpinEdit",
+        "TStringGrid", "TDrawGrid",
     };
 
     public static List<ChildControlInfo> GetChildControls(IntPtr windowHandle)

@@ -25,8 +25,8 @@
                     {
                         var tag = ctrl.IsInput ? "[Input]" : "[Control]";
                         var text = string.IsNullOrEmpty(ctrl.Text) ? "" : $" \"{ctrl.Text}\"";
-                        var pos = ctrl.IsInput ? $" @({ctrl.X},{ctrl.Y} {ctrl.Width}x{ctrl.Height}) id={ctrl.ControlId}" : "";
-                        Console.WriteLine($"  |_ {tag} {ctrl.ClassName}{text}{pos}");
+                        var name = !string.IsNullOrEmpty(ctrl.AutomationName) ? $" [{ctrl.AutomationName}]" : "";
+                        Console.WriteLine($"  |_ {tag} {ctrl.ClassName}{text}{name}");
                     }
                 }
 

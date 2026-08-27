@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Automation;
 
 public class WindowsAutomation
 {
@@ -24,6 +25,7 @@ public class WindowsAutomation
         public int Width { get; set; }
         public int Height { get; set; }
         public int ControlId { get; set; }
+        public string? AutomationName { get; set; }
     }
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
@@ -69,6 +71,7 @@ public class WindowsAutomation
         int len = (int)SendMessage(hwnd, WM_GETTEXTLENGTH, IntPtr.Zero, IntPtr.Zero);
         if (len <= 0) return string.Empty;
         var sb = new StringBuilder(len + 1);
+        
         SendMessage(hwnd, WM_GETTEXT, (IntPtr)sb.Capacity, sb);
         return sb.ToString();
     }
@@ -133,6 +136,18 @@ public class WindowsAutomation
 
             GetWindowRect(hwnd, out RECT rect);
 
+            var isInput = InputClassNames.Contains(cls);
+            string? automationName = null;
+            if (isInput)
+            {
+                try
+                {
+                    var element = AutomationElement.FromHandle(hwnd);
+                    automationName = element.Current.Name;
+                }
+                catch { }
+            }
+
             controls.Add(new ChildControlInfo
             {
                 ClassName = cls,
@@ -140,12 +155,13 @@ public class WindowsAutomation
                 Handle = hwnd,
                 IsVisible = IsWindowVisible(hwnd),
                 IsEnabled = IsWindowEnabled(hwnd),
-                IsInput = InputClassNames.Contains(cls),
+                IsInput = isInput,
                 X = rect.Left,
                 Y = rect.Top,
                 Width = rect.Right - rect.Left,
                 Height = rect.Bottom - rect.Top,
                 ControlId = GetDlgCtrlID(hwnd),
+                AutomationName = automationName,
             });
 
             return true;

@@ -2,6 +2,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudio,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudio,visualstudiocode
 
+# Published executables
+*.exe
+
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json

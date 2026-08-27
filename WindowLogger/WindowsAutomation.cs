@@ -71,7 +71,7 @@ public class WindowsAutomation
         int len = (int)SendMessage(hwnd, WM_GETTEXTLENGTH, IntPtr.Zero, IntPtr.Zero);
         if (len <= 0) return string.Empty;
         var sb = new StringBuilder(len + 1);
-        
+
         SendMessage(hwnd, WM_GETTEXT, (IntPtr)sb.Capacity, sb);
         return sb.ToString();
     }
@@ -122,9 +122,52 @@ public class WindowsAutomation
         "TStringGrid", "TDrawGrid",
     };
 
+    // Find all text/label elements via UI Automation for label association
+    private static List<(System.Windows.Rect Bounds, string Name)> GetUiaLabels(IntPtr windowHandle)
+    {
+        var labels = new List<(System.Windows.Rect, string)>();
+        try
+        {
+            var root = AutomationElement.FromHandle(windowHandle);
+            var textElements = root.FindAll(TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text));
+            foreach (AutomationElement el in textElements)
+            {
+                var name = el.Current.Name;
+                var bounds = el.Current.BoundingRectangle;
+                if (!string.IsNullOrEmpty(name) && !bounds.IsEmpty)
+                    labels.Add((bounds, name));
+            }
+        }
+        catch { }
+        return labels;
+    }
+
+    // Find the label closest to the left or above the control
+    private static string? FindNearestLabel(List<(System.Windows.Rect Bounds, string Name)> labels, int cx, int cy, int ch)
+    {
+        string? best = null;
+        double bestDist = double.MaxValue;
+        foreach (var (bounds, name) in labels)
+        {
+            // label must be to the left or roughly same row (within height tolerance)
+            double labelCy = bounds.Top + bounds.Height / 2;
+            if (bounds.Right > cx + 5) continue; // label should be left of control
+            if (Math.Abs(labelCy - (cy + ch / 2.0)) > ch * 2) continue; // same-ish row
+            double dist = cx - bounds.Right + Math.Abs(labelCy - (cy + ch / 2.0));
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = name;
+            }
+        }
+        return best;
+    }
+
     public static List<ChildControlInfo> GetChildControls(IntPtr windowHandle)
     {
         var controls = new List<ChildControlInfo>();
+        var labels = GetUiaLabels(windowHandle);
 
         EnumChildWindows(windowHandle, (hwnd, lParam) =>
         {
@@ -140,12 +183,16 @@ public class WindowsAutomation
             string? automationName = null;
             if (isInput)
             {
+                // Try direct UIA name first
                 try
                 {
                     var element = AutomationElement.FromHandle(hwnd);
                     automationName = element.Current.Name;
                 }
                 catch { }
+                // Fall back to spatial label matching
+                if (string.IsNullOrEmpty(automationName) || automationName == text)
+                    automationName = FindNearestLabel(labels, rect.Left, rect.Top, rect.Bottom - rect.Top);
             }
 
             controls.Add(new ChildControlInfo

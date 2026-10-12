@@ -27,21 +27,21 @@ jobs:
           --self-contained true
           -o publish
 
-      - name: Sign executable
-        run: |
-          Install-Module -Name TrustedSigning -Scope CurrentUser -Force
-          Import-Module TrustedSigning
-          Invoke-TrustedSigning `
-            -Endpoint "https://eus.codesigning.azure.net" `
-            -CodeSigningAccountName "FetchitSigning" `
-            -CertificateProfileName "Fetchit" `
-            -FilesFolderFilter "*.exe" `
-            -FilesFolder "publish" `
-            -FileDigest SHA256
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      # - name: Sign executable
+      #   run: |
+      #     Install-Module -Name TrustedSigning -Scope CurrentUser -Force
+      #     Import-Module TrustedSigning
+      #     Invoke-TrustedSigning `
+      #       -Endpoint "https://eus.codesigning.azure.net" `
+      #       -CodeSigningAccountName "FetchitSigning" `
+      #       -CertificateProfileName "Fetchit" `
+      #       -FilesFolderFilter "*.exe" `
+      #       -FilesFolder "publish" `
+      #       -FileDigest SHA256
+      #   env:
+      #     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      #     AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
